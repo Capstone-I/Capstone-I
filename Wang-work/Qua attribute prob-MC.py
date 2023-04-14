@@ -8,7 +8,7 @@ from qiskit.algorithms import QAOA
 from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit.circuit.library import TwoLocal
 
-#It is from the Max_cut tutorial but significant change has been made based on my understanding and there are still some problems
+#It is from the Max_cut ansatze tutorial but significant change has been made based on my understanding and there are still some problems
 service = QiskitRuntimeService(
     channel='ibm_quantum',
     instance='ibm-q-asu/main/pi-deluca',
