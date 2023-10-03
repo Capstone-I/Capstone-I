@@ -34,8 +34,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 clf = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1, max_iter = 25000)
 
-clf = Perceptron(tol=0.00001, eta0 = 0.1, max_iter = 25000)
-
 clf.fit(X_train, np.ravel(y_train))
 
 y_pred = clf.predict(X_test)
