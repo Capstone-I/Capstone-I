@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 games = pd.read_csv('~/Desktop/nba-games/games.csv')
 details = pd.read_csv('~/Desktop/nba-games/games_details.csv')
@@ -139,6 +140,22 @@ with torch.no_grad():
     test_predictions = model(X_test_tensor).flatten()
     test_loss = criterion(test_predictions, y_test_tensor.flatten())
 
+print(f"Test Loss (MSE): {test_loss.item()}")
+
+
+y_test_np = y_test_tensor.numpy().flatten()
+test_predictions_np = test_predictions.numpy()
+
+
+rmse = np.sqrt(mean_squared_error(y_test_np, test_predictions_np))
+mae = mean_absolute_error(y_test_np, test_predictions_np)
+r2 = r2_score(y_test_np, test_predictions_np)
+
+print("Root Mean Squared Error (RMSE):", rmse)
+print("Mean Absolute Error (MAE):", mae)
+print("R^2 Score:", r2)
+
+
 # Additional function to filter data for 2017 season
 def get_2017(data):
     temp = data.copy(deep=False)
@@ -151,7 +168,6 @@ X_2017, y_2018 = split_data_X_y(data_2017)
 
 # Convert data to PyTorch tensors
 X_2017_tensor = torch.tensor(X_2017.values, dtype=torch.float32)
-y_2018_tensor = torch.tensor(y_2018.values, dtype=torch.float32)
 
 # Predict using the trained model
 model.eval()
