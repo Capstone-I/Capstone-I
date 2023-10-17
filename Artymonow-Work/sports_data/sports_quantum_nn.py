@@ -16,7 +16,6 @@ import numpy as np
 from qiskit.algorithms.optimizers import COBYLA, POWELL, SPSA
 from qiskit import QuantumCircuit
 
-# Create sampler object
 service = QiskitRuntimeService(
     channel='ibm_quantum',
     instance='ibm-q-asu/main/pi-deluca',
@@ -26,7 +25,6 @@ options = Options()
 options.execution.shots = 128
 estimator = Estimator(backend='ibmq_qasm_simulator', options=options)
 
-# Load your datasets (I'm assuming they're already downloaded)
 games = pd.read_csv('~/Desktop/nba-games/games.csv')
 details = pd.read_csv('~/Desktop/nba-games/games_details.csv')
 teams = pd.read_csv('~/Desktop/nba-games/teams.csv')
@@ -133,7 +131,7 @@ qc.compose(feature_map, inplace=True)
 qc.compose(ansatz, inplace=True)
 
 
-# Set up the sampler qnn
+# Set up the estimator qnn
 qnn = EstimatorQNN(
     circuit=qc,
     input_params=feature_map.parameters,
@@ -141,7 +139,7 @@ qnn = EstimatorQNN(
     estimator=estimator
 )
 
-# Set up the neural network classifier
+# Set up the neural network regressor
 regressor = NeuralNetworkRegressor(
     qnn,
     loss='cross_entropy',
@@ -152,10 +150,9 @@ regressor = NeuralNetworkRegressor(
 X_train_pca = np.array(X_train_pca)
 y_train_array = y_train.to_numpy()
 
-# Train the classifier
+# Train the regressor
 regressor.fit(X_train_pca, y_train_array)
 
-# Test the classifier
 r2_score = regressor.score(X_test_pca, y_test_array)
 print("r2 score:", r2_score)
 
