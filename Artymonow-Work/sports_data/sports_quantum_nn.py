@@ -16,11 +16,6 @@ import numpy as np
 from qiskit.algorithms.optimizers import COBYLA, POWELL, SPSA
 from qiskit import QuantumCircuit
 
-
-# Save your credentials on disk.
-QiskitRuntimeService.save_account(channel='ibm_quantum', token='49b7dafc61b79f8c90ddc7bb49665c555d459b125216b4669f337119aed0c61e9d76763dce0b638c43427c3a5889d05c562ee155528a779060e18778932ac6a3', overwrite=True)
-
-
 # Create sampler object
 service = QiskitRuntimeService(
     channel='ibm_quantum',
