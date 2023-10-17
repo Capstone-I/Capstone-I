@@ -7,6 +7,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import matplotlib.pyplot as plt
+
 
 games = pd.read_csv('~/Desktop/nba-games/games.csv')
 details = pd.read_csv('~/Desktop/nba-games/games_details.csv')
@@ -193,6 +195,22 @@ prediction_df_2018 = pd.DataFrame(prediction_dict_2018)
 prediction_df_2018 = prediction_df_2018.astype({'wins_pred_2018': 'int64'})
 prediction_df_2018.sort_values(by='wins_pred_2018', ascending=False, inplace=True)
 prediction_df_2018.reset_index(inplace=True, drop=True)
+
+# Calculate MAE and RMSE for 2018 predictions
+mae_2018 = mean_absolute_error(prediction_df_2018['wins_2018'], prediction_df_2018['wins_pred_2018'])
+rmse_2018 = np.sqrt(mean_squared_error(prediction_df_2018['wins_2018'], prediction_df_2018['wins_pred_2018']))
+
+# Visualization
+plt.figure(figsize=(12, 6))
+plt.scatter(prediction_df_2018['team_name'], prediction_df_2018['wins_2018'], color='blue', label='Actual Wins', s=100)
+plt.scatter(prediction_df_2018['team_name'], prediction_df_2018['wins_pred_2018'], color='red', label='Predicted Wins', s=100, alpha=0.6)
+plt.xticks(rotation=90)
+plt.ylabel('Number of Wins')
+plt.title(f'Actual vs Predicted Wins for 2018 Season\nMAE: {mae_2018:.2f} | RMSE: {rmse_2018:.2f}')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
 
 # Save to CSV
 prediction_df_2018.to_csv('~/Desktop/nba-games/nba_data_2018_prediction.csv', index=False)
