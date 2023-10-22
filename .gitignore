@@ -1,4 +1,6 @@
-
-Lynch-Work/.idea/
-Lynch-Work/venv/
-Lynch-Work/QuantumNeuralNetwork/Error-Testing.ipynb
+.idea/
+Lynch-Work/logs/*log
+Lynch-Work/logs/*logs
+Lynch-Work/models/*model
+Lynch-Work/models/*keras
+Lynch-Work/assets/*.mp3

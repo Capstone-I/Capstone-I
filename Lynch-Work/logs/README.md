@@ -1,0 +1,2 @@
+# This folder is for saving output logs from the runner program
+The runner program generates log files that show up here. These contain statistics that we use to compare classical and quantum neural network performance.
