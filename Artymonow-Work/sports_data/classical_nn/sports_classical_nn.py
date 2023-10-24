@@ -94,7 +94,8 @@ def split_data_X_y(data):
 # Prepare data
 data = get_data(ranking, games, details)
 data_scaled = scale_data(data)
-X, y = split_data_X_y(data_scaled)
+data_train = data_scaled[data_scaled['NEXT_SEASON'] != 2018]
+X, y = split_data_X_y(data_train)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=2023)
 
 # Convert data to PyTorch tensors
@@ -107,18 +108,23 @@ y_test_tensor = torch.tensor(y_test.values, dtype=torch.float32)
 train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
 train_loader = DataLoader(dataset=train_dataset, batch_size=32, shuffle=True)
 
-# Neural Network Architecture
 class Net(nn.Module):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.fc1 = nn.Linear(X_train.shape[1], 128)
         self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 1)
+        self.fc3 = nn.Linear(64, 32)
+        self.fc4 = nn.Linear(32, 16)
+        self.fc5 = nn.Linear(16, 8)
+        self.fc6 = nn.Linear(8, 1) 
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = torch.relu(self.fc3(x)) 
+        x = torch.relu(self.fc4(x)) 
+        x = torch.relu(self.fc5(x)) 
+        x = self.fc6(x) 
         return x
 
 # Initialize neural network, loss function and optimizer
@@ -127,7 +133,7 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Training loop
-for epoch in range(100):
+for epoch in range(50):
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
         output = model(data)
@@ -136,48 +142,36 @@ for epoch in range(100):
         optimizer.step()
     print(f"Epoch {epoch+1}, Loss: {loss.item()}")
 
-# Testing
-model.eval()
-with torch.no_grad():
-    test_predictions = model(X_test_tensor).flatten()
-    test_loss = criterion(test_predictions, y_test_tensor.flatten())
-
-print(f"Test Loss (MSE): {test_loss.item()}")
-
-
-y_test_np = y_test_tensor.numpy().flatten()
-test_predictions_np = test_predictions.numpy()
-
-
-rmse = np.sqrt(mean_squared_error(y_test_np, test_predictions_np))
-mae = mean_absolute_error(y_test_np, test_predictions_np)
-r2 = r2_score(y_test_np, test_predictions_np)
-
-print("Root Mean Squared Error (RMSE):", rmse)
-print("Mean Absolute Error (MAE):", mae)
-print("R^2 Score:", r2)
-
-
 # Additional function to filter data for 2017 season
 def get_2017(data):
     temp = data.copy(deep=False)
     temp = temp[temp['NEXT_SEASON'] == 2018]
     return temp
 
-# Get the 2017 data
-data_2017 = get_2017(data_scaled)
-X_2017, y_2018 = split_data_X_y(data_2017)
-
-# Convert data to PyTorch tensors
-X_2017_tensor = torch.tensor(X_2017.values, dtype=torch.float32)
-
-# Predict using the trained model
+# Evaluation
 model.eval()
 with torch.no_grad():
-    y_2018_pred_tensor = model(X_2017_tensor).flatten()
+    # Testing on X_test
+    test_predictions = model(X_test_tensor).flatten()
+    test_loss = criterion(test_predictions, y_test_tensor.flatten())
+    print(f"Test Loss (MSE): {test_loss.item()}")
 
-# Convert tensor to numpy array for further processing
-y_2018_pred = y_2018_pred_tensor.numpy()
+    # Metrics
+    y_test_np = y_test_tensor.numpy().flatten()
+    test_predictions_np = test_predictions.numpy()
+    rmse = np.sqrt(mean_squared_error(y_test_np, test_predictions_np))
+    mae = mean_absolute_error(y_test_np, test_predictions_np)
+    r2 = r2_score(y_test_np, test_predictions_np)
+    print("Root Mean Squared Error (RMSE):", rmse)
+    print("Mean Absolute Error (MAE):", mae)
+    print("R^2 Score:", r2)
+
+    # Predictions for 2017 season
+    data_2017 = get_2017(data_scaled)
+    X_2017, y_2018 = split_data_X_y(data_2017)
+    X_2017_tensor = torch.tensor(X_2017.values, dtype=torch.float32)
+    y_2018_pred_tensor = model(X_2017_tensor).flatten()
+    y_2018_pred = y_2018_pred_tensor.numpy()
 
 # Create a dictionary to map team IDs to team names
 team_id_name = {row['TEAM_ID']: row['NICKNAME'] for _, row in teams.iterrows()}
