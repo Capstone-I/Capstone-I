@@ -8,13 +8,15 @@ from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from qiskit_ibm_runtime import Sampler, Options, QiskitRuntimeService, Estimator
 from sklearn.decomposition import PCA
-from qiskit.circuit.library import ZFeatureMap, EfficientSU2
+from qiskit.circuit.library import ZFeatureMap, EfficientSU2, RealAmplitudes
 from qiskit_machine_learning.neural_networks import SamplerQNN, EstimatorQNN
 from qiskit_machine_learning.algorithms.classifiers import NeuralNetworkClassifier
-from qiskit_machine_learning.algorithms.regressors import NeuralNetworkRegressor
+from qiskit_machine_learning.algorithms.regressors import NeuralNetworkRegressor, VQR
 import numpy as np
-from qiskit.algorithms.optimizers import COBYLA, POWELL, SPSA
+from qiskit.algorithms.optimizers import COBYLA, POWELL, SPSA, L_BFGS_B
 from qiskit import QuantumCircuit
+import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 
 # Create sampler object
@@ -118,14 +120,11 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 y_train_array = y_train.to_numpy().ravel()
 y_test_array = y_test.to_numpy().ravel()
 
-num_qubits = 5
-pca = PCA(n_components=num_qubits)
-X_train_pca = pca.fit_transform(X_train)
-X_test_pca = pca.transform(X_test)
+num_qubits = 19
 
 # Define the feature map and ansatz
 feature_map = ZFeatureMap(feature_dimension=num_qubits, reps=1)
-ansatz = EfficientSU2(num_qubits=num_qubits, reps=1)
+ansatz = RealAmplitudes(num_qubits=num_qubits, reps=1)
 
 # Quantum circuit
 qc = QuantumCircuit(num_qubits)
@@ -133,7 +132,7 @@ qc.compose(feature_map, inplace=True)
 qc.compose(ansatz, inplace=True)
 
 
-# Set up the sampler qnn
+#Set up the sampler qnn
 qnn = EstimatorQNN(
     circuit=qc,
     input_params=feature_map.parameters,
@@ -144,20 +143,31 @@ qnn = EstimatorQNN(
 # Set up the neural network classifier
 regressor = NeuralNetworkRegressor(
     qnn,
-    loss='cross_entropy',
+    loss='squared_error',
     optimizer=COBYLA(maxiter=100)
 )
 
+
 # Convert to NumPy arrays
-X_train_pca = np.array(X_train_pca)
+X_train = np.array(X_train)
 y_train_array = y_train.to_numpy()
 
 # Train the classifier
-regressor.fit(X_train_pca, y_train_array)
+regressor.fit(X_train, y_train_array)
 
-# Test the classifier
-r2_score = regressor.score(X_test_pca, y_test_array)
-print("r2 score:", r2_score)
+# Predict on test data
+y_test_pred = regressor.predict(X_test)  
+y_test_pred = y_test_pred.reshape(-1) 
+
+# Compute metrics
+r2 = regressor.score(y_test_array, y_test_pred)
+rmse = np.sqrt(mean_squared_error(y_test_array, y_test_pred))
+mae = mean_absolute_error(y_test_array, y_test_pred)
+
+# Print metrics
+print("R2 Score:", r2)
+print("Root Mean Squared Error (RMSE):", rmse)
+print("Mean Absolute Error (MAE):", mae)
 
 # Additional function to filter data for 2017 season
 def get_2017(data):
@@ -169,11 +179,8 @@ def get_2017(data):
 data_2017 = get_2017(data_scaled)
 X_2017, y_2018 = split_data_X_y(data_2017)
 
-# Transform the 2017 data using the same PCA
-X_2017_pca = pca.transform(X_2017)
-
 # Predict using the trained QNN model
-y_2018_pred = regressor.predict(X_2017_pca)
+y_2018_pred = regressor.predict(X_2017)
 y_2018_pred = y_2018_pred.reshape(-1)
 
 # Create a dictionary to map team IDs to team names
@@ -192,6 +199,21 @@ prediction_df_2018 = pd.DataFrame(prediction_dict_2018)
 prediction_df_2018 = prediction_df_2018.astype({'wins_pred_2018': 'int64'})
 prediction_df_2018.sort_values(by='wins_pred_2018', ascending=False, inplace=True)
 prediction_df_2018.reset_index(inplace=True, drop=True)
+
+# Calculate MAE and RMSE for 2018 predictions
+mae_2018 = mean_absolute_error(prediction_df_2018['wins_2018'], prediction_df_2018['wins_pred_2018'])
+rmse_2018 = np.sqrt(mean_squared_error(prediction_df_2018['wins_2018'], prediction_df_2018['wins_pred_2018']))
+
+# Visualization
+plt.figure(figsize=(12, 6))
+plt.scatter(prediction_df_2018['team_name'], prediction_df_2018['wins_2018'], color='blue', label='Actual Wins', s=100)
+plt.scatter(prediction_df_2018['team_name'], prediction_df_2018['wins_pred_2018'], color='red', label='Predicted Wins', s=100, alpha=0.6)
+plt.xticks(rotation=90)
+plt.ylabel('Number of Wins')
+plt.title(f'Actual vs Predicted Wins for 2018 Season\nMAE: {mae_2018:.2f} | RMSE: {rmse_2018:.2f}')
+plt.legend()
+plt.tight_layout()
+plt.show()
 
 # Save to CSV
 prediction_df_2018.to_csv('~/Desktop/nba-games/nba_data_2018_prediction_QNN.csv', index=False)
