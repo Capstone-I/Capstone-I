@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 
-# Create sampler object
 service = QiskitRuntimeService(
     channel='ibm_quantum',
     instance='ibm-q-asu/main/pi-deluca',
@@ -113,7 +112,8 @@ def split_data_X_y(data):
 # Prepare data
 data = get_data(ranking, games, details)
 data_scaled = scale_data(data)
-X, y = split_data_X_y(data_scaled)
+data_train = data_scaled[data_scaled['NEXT_SEASON'] != 2018]
+X, y = split_data_X_y(data_train)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=2023)
 
 # Flatten y_train and y_test
