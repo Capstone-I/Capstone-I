@@ -8,9 +8,8 @@ from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from qiskit_ibm_runtime import Sampler, Options, QiskitRuntimeService, Estimator
 from sklearn.decomposition import PCA
-from qiskit.circuit.library import ZFeatureMap, EfficientSU2, RealAmplitudes, ZZFeatureMap
+from qiskit.circuit.library import ZFeatureMap, EfficientSU2, RealAmplitudes, ZFeatureMap
 from qiskit_machine_learning.neural_networks import SamplerQNN, EstimatorQNN
-from qiskit_machine_learning.algorithms.classifiers import NeuralNetworkClassifier
 from qiskit_machine_learning.algorithms.regressors import NeuralNetworkRegressor
 import numpy as np
 from qiskit.algorithms.optimizers import COBYLA, POWELL, SPSA, L_BFGS_B
@@ -19,14 +18,13 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 import matplotlib.pyplot as plt
 from qiskit_machine_learning.connectors import TorchConnector
 
-
 service = QiskitRuntimeService(
     channel='ibm_quantum',
     instance='ibm-q-asu/main/pi-deluca',
 )
 
 options = Options()
-options.execution.shots = 256
+options.execution.shots = 128
 estimator = Estimator(backend='ibmq_qasm_simulator', options=options)
 
 games = pd.read_csv('~/Desktop/nba-games/games.csv')
@@ -119,26 +117,36 @@ data_train = data_scaled[data_scaled['NEXT_SEASON'] != 2018]
 X, y = split_data_X_y(data_train)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=2023)
 
+# Split data into training, validation, and test sets
+X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.4, random_state=2023)
+X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=2023)
+
 # Convert data to PyTorch tensors
 X_train_tensor = torch.tensor(X_train.values, dtype=torch.float32)
 y_train_tensor = torch.tensor(y_train.values, dtype=torch.float32)
+X_val_tensor = torch.tensor(X_val.values, dtype=torch.float32)
+y_val_tensor = torch.tensor(y_val.values, dtype=torch.float32)
 X_test_tensor = torch.tensor(X_test.values, dtype=torch.float32)
 y_test_tensor = torch.tensor(y_test.values, dtype=torch.float32)
 
-# Create DataLoader for training and testing
+# Create DataLoader for training, validation, and testing
 train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
 train_loader = DataLoader(dataset=train_dataset, batch_size=32, shuffle=True)
 
+val_dataset = TensorDataset(X_val_tensor, y_val_tensor)
+val_loader = DataLoader(dataset=val_dataset, batch_size=32)
+
 # Define and create QNN
 def create_qnn():
-    feature_map = ZZFeatureMap(feature_dimension=8, reps=1)
-    ansatz = EfficientSU2(num_qubits=8, reps=1) 
+    feature_map = ZFeatureMap(feature_dimension=8, reps=2)
+    ansatz = RealAmplitudes(num_qubits=8, reps=1) 
     qc = QuantumCircuit(8) 
     qc.compose(feature_map, inplace=True)
     qc.compose(ansatz, inplace=True)
 
     qnn = EstimatorQNN(
         circuit=qc,
+        estimator=estimator,
         input_params=feature_map.parameters,
         weight_params=ansatz.parameters,
         input_gradients=True,
@@ -150,41 +158,64 @@ qnn = create_qnn()
 class Net(nn.Module):
     def __init__(self, qnn):
         super().__init__()
-        self.fc1 = nn.Linear(X_train.shape[1], 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 32)
-        self.fc4 = nn.Linear(32, 16)
-        self.fc5 = nn.Linear(16, 8)
+        self.fc1 = nn.Linear(X_train.shape[1], 32)
+        self.fc2 = nn.Linear(32, 16)
+        self.fc3 = nn.Linear(16, 8)
         self.qnn = TorchConnector(qnn)
-        self.fc6 = nn.Linear(1, 1)  
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
-        x = torch.relu(self.fc3(x))  
-        x = torch.relu(self.fc4(x))
-        x = torch.relu(self.fc5(x))  
+        x = torch.relu(self.fc3(x))
         x = self.qnn(x)
-        x = self.fc6(x)  
         return x
 
 
-
-# Initialize neural network, loss function and optimizer
+# Initialize neural network, loss function, optimizer, and scheduler
 model = Net(qnn)
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.01)
-model.train()
+optimizer = optim.Adam(model.parameters(), lr=2)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=12, gamma=0.5)
+
+# Initialize variables for early stopping
+best_val_loss = float('inf')
+patience = 3
+counter = 0
 
 # Training loop
-for epoch in range(50):
+for epoch in range(100):
+    model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad(set_to_none=True)
         output = model(data)
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()
-    print(f"Epoch {epoch+1}, Loss: {loss.item()}")
+
+    # Validation
+    model.eval()
+    val_loss = 0
+    with torch.no_grad():
+        for data, target in val_loader:
+            output = model(data)
+            val_loss += criterion(output, target).item()
+    val_loss /= len(val_loader)
+
+    print(f"Epoch {epoch+1}, Training Loss: {loss.item()}, Validation Loss: {val_loss}")
+
+    # Step the scheduler
+    scheduler.step()
+
+    # Early stopping
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        counter = 0
+    else:
+        counter += 1
+        print(f"EarlyStopping counter: {counter} out of {patience}")
+        if counter >= patience:
+            print("Early stopping")
+            break
 
 # Additional function to filter data for 2017 season
 def get_2017(data):
@@ -234,14 +265,25 @@ prediction_df_2018 = prediction_df_2018.astype({'wins_pred_2018': 'int64'})
 prediction_df_2018.sort_values(by='wins_pred_2018', ascending=False, inplace=True)
 prediction_df_2018.reset_index(inplace=True, drop=True)
 
+# Calculate MAE, RMSE, and R² for 2018 predictions
+mae_2018 = mean_absolute_error(prediction_df_2018['wins_2018'], prediction_df_2018['wins_pred_2018'])
+rmse_2018 = np.sqrt(mean_squared_error(prediction_df_2018['wins_2018'], prediction_df_2018['wins_pred_2018']))
+r2_2018 = r2_score(prediction_df_2018['wins_2018'], prediction_df_2018['wins_pred_2018'])
+
 # Visualization
-plt.figure(figsize=(12, 6))
+plt.figure(figsize=(14, 7))
 plt.scatter(prediction_df_2018['team_name'], prediction_df_2018['wins_2018'], color='blue', label='Actual Wins', s=100)
 plt.scatter(prediction_df_2018['team_name'], prediction_df_2018['wins_pred_2018'], color='red', label='Predicted Wins', s=100, alpha=0.6)
 plt.xticks(rotation=90)
 plt.ylabel('Number of Wins')
-plt.title(f'Actual vs Predicted Wins for 2018 Season\nMAE: {mae:.2f} | RMSE: {rmse:.2f}')
+plt.title(f'Actual vs Predicted Wins for 2018 Season')
 plt.legend()
+
+# Add metrics to the plot
+plt.annotate(f'MAE: {mae_2018:.2f}', xy=(0.75, 0.9), xycoords='axes fraction', fontsize=12)
+plt.annotate(f'RMSE: {rmse_2018:.2f}', xy=(0.75, 0.85), xycoords='axes fraction', fontsize=12)
+plt.annotate(f'R²: {r2_2018:.2f}', xy=(0.75, 0.8), xycoords='axes fraction', fontsize=12)
+
 plt.tight_layout()
 plt.show()
 
