@@ -103,9 +103,9 @@ X, y = split_data_X_y(data_scaled)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=2023)
 
 mlp = MLPRegressor(
-    activation='tanh',
+    activation='relu',
     solver='sgd',
-    hidden_layer_sizes=(10, 100),
+    hidden_layer_sizes=(100, 100),
     alpha=0.001,
     random_state=20,
     early_stopping=True,
