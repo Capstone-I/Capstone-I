@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from qiskit_ibm_runtime import Sampler, Options, QiskitRuntimeService, Estimator
 from sklearn.decomposition import PCA
-from qiskit.circuit.library import ZFeatureMap, EfficientSU2, RealAmplitudes, ZFeatureMap
+from qiskit.circuit.library import ZFeatureMap, EfficientSU2, RealAmplitudes, ZZFeatureMap
 from qiskit_machine_learning.neural_networks import SamplerQNN, EstimatorQNN
 from qiskit_machine_learning.algorithms.regressors import NeuralNetworkRegressor
 import numpy as np
@@ -24,7 +24,7 @@ service = QiskitRuntimeService(
 )
 
 options = Options()
-options.execution.shots = 128
+options.execution.shots = 256
 estimator = Estimator(backend='ibmq_qasm_simulator', options=options)
 
 games = pd.read_csv('~/Desktop/nba-games/games.csv')
@@ -138,9 +138,9 @@ val_loader = DataLoader(dataset=val_dataset, batch_size=32)
 
 # Define and create QNN
 def create_qnn():
-    feature_map = ZFeatureMap(feature_dimension=8, reps=2)
-    ansatz = RealAmplitudes(num_qubits=8, reps=1) 
-    qc = QuantumCircuit(8) 
+    feature_map = ZFeatureMap(feature_dimension=2, reps=2)
+    ansatz = EfficientSU2(num_qubits=2, reps=1) 
+    qc = QuantumCircuit(2) 
     qc.compose(feature_map, inplace=True)
     qc.compose(ansatz, inplace=True)
 
@@ -160,22 +160,24 @@ class Net(nn.Module):
         super().__init__()
         self.fc1 = nn.Linear(X_train.shape[1], 32)
         self.fc2 = nn.Linear(32, 16)
-        self.fc3 = nn.Linear(16, 8)
+        self.fc3 = nn.Linear(16, 2)
         self.qnn = TorchConnector(qnn)
+        self.fc4 = nn.Linear(1, 1)
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
         x = torch.relu(self.fc3(x))
         x = self.qnn(x)
+        x = self.fc4(x)
         return x
 
 
 # Initialize neural network, loss function, optimizer, and scheduler
 model = Net(qnn)
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=2)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=12, gamma=0.5)
+optimizer = optim.Adam(model.parameters(), lr=0.5)
+#scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=12, gamma=0.5)
 
 # Initialize variables for early stopping
 best_val_loss = float('inf')
@@ -183,7 +185,7 @@ patience = 3
 counter = 0
 
 # Training loop
-for epoch in range(100):
+for epoch in range(50):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad(set_to_none=True)
@@ -204,7 +206,7 @@ for epoch in range(100):
     print(f"Epoch {epoch+1}, Training Loss: {loss.item()}, Validation Loss: {val_loss}")
 
     # Step the scheduler
-    scheduler.step()
+    #scheduler.step()
 
     # Early stopping
     if val_loss < best_val_loss:
@@ -288,4 +290,4 @@ plt.tight_layout()
 plt.show()
 
 # Save to CSV
-prediction_df_2018.to_csv('~/Desktop/nba-games/nba_data_2018_prediction_QNN.csv', index=False)
+prediction_df_2018.to_csv('~/Desktop/nba-games/nba_data_2018_prediction_HQNN.csv', index=False)
