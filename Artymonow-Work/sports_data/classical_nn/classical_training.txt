@@ -1,0 +1,26 @@
+Epoch 1, Training Loss: 1699.6473388671875, Validation Loss: 1912.5186767578125
+Epoch 2, Training Loss: 1649.48583984375, Validation Loss: 1676.2109375
+Epoch 3, Training Loss: 731.2178344726562, Validation Loss: 681.7233072916666
+Epoch 4, Training Loss: 523.8612060546875, Validation Loss: 623.6351318359375
+Epoch 5, Training Loss: 913.4323120117188, Validation Loss: 720.971435546875
+EarlyStopping counter: 1 out of 2
+Epoch 6, Training Loss: 402.5021057128906, Validation Loss: 485.9717610677083
+Epoch 7, Training Loss: 474.26116943359375, Validation Loss: 445.6150817871094
+Epoch 8, Training Loss: 359.2745666503906, Validation Loss: 447.8350016276042
+EarlyStopping counter: 1 out of 2
+Epoch 9, Training Loss: 326.0599060058594, Validation Loss: 323.6834971110026
+Epoch 10, Training Loss: 338.3507995605469, Validation Loss: 275.3791859944661
+Epoch 11, Training Loss: 218.60704040527344, Validation Loss: 214.00802103678384
+Epoch 12, Training Loss: 174.7197265625, Validation Loss: 155.3266143798828
+Epoch 13, Training Loss: 118.36070251464844, Validation Loss: 140.0939712524414
+Epoch 14, Training Loss: 101.43006134033203, Validation Loss: 122.45350901285808
+Epoch 15, Training Loss: 104.37891387939453, Validation Loss: 114.66815694173177
+Epoch 16, Training Loss: 67.18267822265625, Validation Loss: 116.508544921875
+EarlyStopping counter: 1 out of 2
+Epoch 17, Training Loss: 65.32240295410156, Validation Loss: 116.8950678507487
+EarlyStopping counter: 2 out of 2
+Early stopping
+Test Loss (MSE): 120.83997344970703
+Root Mean Squared Error (RMSE): 10.9927225
+Mean Absolute Error (MAE): 8.796908
+R^2 Score: 0.3338795264818808
