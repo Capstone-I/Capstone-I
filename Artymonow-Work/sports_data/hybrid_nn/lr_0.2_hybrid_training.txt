@@ -1,0 +1,30 @@
+Epoch 1, Training Loss: 1572.1336669921875, Validation Loss: 1751.8985595703125
+Epoch 2, Training Loss: 1583.25830078125, Validation Loss: 1494.3255615234375
+Epoch 3, Training Loss: 1381.3287353515625, Validation Loss: 1261.9517415364583
+Epoch 4, Training Loss: 1078.3756103515625, Validation Loss: 1057.1636555989583
+Epoch 5, Training Loss: 783.3809204101562, Validation Loss: 883.8416341145834
+Epoch 6, Training Loss: 742.4225463867188, Validation Loss: 735.8945922851562
+Epoch 7, Training Loss: 540.2979125976562, Validation Loss: 611.8631591796875
+Epoch 8, Training Loss: 395.9226989746094, Validation Loss: 510.8271993001302
+Epoch 9, Training Loss: 299.73260498046875, Validation Loss: 428.15650431315106
+Epoch 10, Training Loss: 384.7511901855469, Validation Loss: 362.94541422526044
+Epoch 11, Training Loss: 379.4783020019531, Validation Loss: 310.87706502278644
+Epoch 12, Training Loss: 212.756591796875, Validation Loss: 269.82293192545575
+Epoch 13, Training Loss: 171.90887451171875, Validation Loss: 240.23848470052084
+Epoch 14, Training Loss: 299.1769714355469, Validation Loss: 213.23218282063803
+Epoch 15, Training Loss: 211.44834899902344, Validation Loss: 196.23194376627603
+Epoch 16, Training Loss: 215.56976318359375, Validation Loss: 182.07264709472656
+Epoch 17, Training Loss: 140.39112854003906, Validation Loss: 171.21796162923178
+Epoch 18, Training Loss: 141.8168182373047, Validation Loss: 165.12816365559897
+Epoch 19, Training Loss: 186.28585815429688, Validation Loss: 159.20357259114584
+Epoch 20, Training Loss: 191.03070068359375, Validation Loss: 155.2854970296224
+Epoch 21, Training Loss: 168.2257537841797, Validation Loss: 152.3524653116862
+Epoch 22, Training Loss: 127.99207305908203, Validation Loss: 153.35897318522134
+EarlyStopping counter: 1 out of 2
+Epoch 23, Training Loss: 126.98621368408203, Validation Loss: 155.78338877360025
+EarlyStopping counter: 2 out of 2
+Early stopping
+Test Loss (MSE): 183.16966247558594
+Root Mean Squared Error (RMSE): 13.5340185
+Mean Absolute Error (MAE): 11.535577
+R^2 Score: -0.009707797205645408

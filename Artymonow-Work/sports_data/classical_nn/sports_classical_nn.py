@@ -119,30 +119,36 @@ val_loader = DataLoader(dataset=val_dataset, batch_size=32)
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fc1 = nn.Linear(X_train.shape[1], 16)
-        self.fc2 = nn.Linear(16, 8)
-        self.fc3 = nn.Linear(8, 1)
+        self.fc1 = nn.Linear(X_train.shape[1], 32)
+        self.fc2 = nn.Linear(32, 16)
+        self.fc3 = nn.Linear(16, 2)
+        self.fc4 = nn.Linear(2, 1)
+        self.fc5 = nn.Linear(1,1)
+        
+
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = torch.relu(self.fc3(x))
+        x = self.fc4(x)
+        x = self.fc5(x)
         return x
 
 
 # Initialize neural network, loss function, optimizer, and scheduler
 model = Net()
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.01)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=12, gamma=0.5)
+optimizer = optim.Adam(model.parameters(), lr=0.018)
+#scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=12, gamma=0.5)
 
 # Initialize variables for early stopping
 best_val_loss = float('inf')
-patience = 3
+patience = 2
 counter = 0
 
 # Training loop
-for epoch in range(100):
+for epoch in range(50):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
@@ -163,7 +169,7 @@ for epoch in range(100):
     print(f"Epoch {epoch+1}, Training Loss: {loss.item()}, Validation Loss: {val_loss}")
 
     # Step the scheduler
-    scheduler.step()
+    #scheduler.step()
 
     # Early stopping
     if val_loss < best_val_loss:
